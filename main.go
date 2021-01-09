@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	fmt.Printf("%+v", string(service.GetSignMessage()))
+	fmt.Printf("%+v", service.GetVerifyData())
 }

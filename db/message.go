@@ -8,17 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func InsertMessage(message model.Message) (*model.Message, error) {
-	err := db.Create(&message).Error
-	return &message, err
+func InsertMessage(message *model.Message) (*model.Message, error) {
+	err := db.Create(message).Error
+	return message, err
 }
 
-func UpdateMessage(message model.Message) (*model.Message, error) {
-	err := db.Updates(&message).Error
-	return &message, err
+func UpdateMessage(message *model.Message) (*model.Message, error) {
+	err := db.Updates(message).Error
+	return message, err
 }
 
-func SelectMessage(message model.MessageInquiry) ([]*model.Message, error) {
+func SelectMessage(message *model.MessageInquiry) ([]*model.Message, error) {
 	var where *gorm.DB
 	if message.UserHash != "" {
 		where = db.Where("user_hash = ?", message.UserHash)
@@ -46,7 +46,7 @@ func SelectMessage(message model.MessageInquiry) ([]*model.Message, error) {
 	if message.Limit > 0 {
 		where = where.Limit(message.Limit)
 	}
-	where = where.Where("deleted_at == null")
+	where = where.Where("deleted_at is null")
 
 	var list []*model.Message
 	err := where.Find(&list).Error

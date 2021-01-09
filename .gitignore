@@ -15,4 +15,5 @@
 # vendor/
 
 classroom.sqlite
+test/classroom.sqlite
 .idea

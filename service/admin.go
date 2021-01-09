@@ -2,14 +2,13 @@ package service
 
 import (
 	"github.com/cellargalaxy/classroom/model"
-	"github.com/cellargalaxy/classroom/service/db"
 	"github.com/cellargalaxy/classroom/util"
 	"github.com/sirupsen/logrus"
 )
 
 const adminUserID = 1
 
-var signMessage []byte
+var verifyData string
 
 func init() {
 	_, err := initAdminUser()
@@ -33,34 +32,34 @@ func initAdminUser() (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	publicKeyHash, err := util.CreateMagnetSha1(publicKey)
+	publicKeyHash, err := util.Sha256String(publicKey)
 	if err != nil {
 		return nil, err
 	}
-	setSignMessage(publicKeyHash)
-	sign, err := util.RsaEncrypt(publicKey, GetSignMessage())
+	setVerifyData(publicKeyHash)
+	sign, err := util.RsaSignString(privateKey, GetVerifyData())
 	if err != nil {
 		return nil, err
 	}
 
 	var userAdd model.UserAdd
 	userAdd.ID = adminUserID
-	userAdd.PrivateKey = string(privateKey)
-	userAdd.PublicKey = string(publicKey)
-	userAdd.PublicKeyHash = string(publicKeyHash)
-	userAdd.Sign = string(sign)
+	userAdd.PrivateKey = privateKey
+	userAdd.PublicKey = publicKey
+	userAdd.PublicKeyHash = publicKeyHash
+	userAdd.Sign = sign
 
-	user, err = db.AddUser(userAdd, GetSignMessage())
+	user, err = AddUser(&userAdd)
 	return user, err
 }
 
-func setSignMessage(sign []byte) {
-	signMessage = sign
+func setVerifyData(data string) {
+	verifyData = data
 }
 
-func GetSignMessage() []byte {
-	if signMessage != nil {
-		return signMessage
+func GetVerifyData() string {
+	if verifyData != "" {
+		return verifyData
 	}
 	user, err := getAdminUser()
 	if err != nil {
@@ -71,13 +70,13 @@ func GetSignMessage() []byte {
 		logrus.Error("查询管理员用户公钥HASH为空")
 		panic(err)
 	}
-	setSignMessage([]byte(user.PublicKeyHash))
-	return signMessage
+	setVerifyData(user.PublicKeyHash)
+	return verifyData
 }
 
 func getAdminUser() (*model.User, error) {
 	var user model.User
 	user.ID = adminUserID
-	userP, err := db.GetUser(user)
+	userP, err := GetUser(&user)
 	return userP, err
 }
