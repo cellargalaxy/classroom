@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	fmt.Printf("%+v", service.GetVerifyData())
+	fmt.Printf("%+v", service.GetAdminPublicKeyHash())
 }

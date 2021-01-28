@@ -8,23 +8,33 @@ import (
 
 const adminUserID = 1
 
-var verifyData string
+var adminPublicKeyHash string
 
 func init() {
-	_, err := initAdminUser()
+	admin, err := getAdminUser()
 	if err != nil {
 		logrus.Error("初始化管理员用户异常")
 		panic(err)
 	}
+	setAdminPublicKeyHash(admin.PublicKeyHash)
 }
 
-func initAdminUser() (*model.User, error) {
-	user, err := getAdminUser()
+func setAdminPublicKeyHash(hashed string) {
+	adminPublicKeyHash = hashed
+}
+
+func GetAdminPublicKeyHash() string {
+	return adminPublicKeyHash
+}
+
+func getAdminUser() (*model.User, error) {
+	user := &model.User{}
+	user.Id = adminUserID
+	user, err := GetUser(user)
 	if err != nil {
 		return user, err
 	}
 	if user != nil {
-		logrus.Info("管理员用户已创建")
 		return user, nil
 	}
 
@@ -33,8 +43,8 @@ func initAdminUser() (*model.User, error) {
 		return nil, err
 	}
 	publicKeyHash := util.Sha256String(publicKey)
-	setVerifyData(publicKeyHash)
-	sign, err := util.RsaSignString(privateKey, GetVerifyData())
+	setAdminPublicKeyHash(publicKeyHash)
+	sign, err := util.RsaHashSignString(privateKey, GetAdminPublicKeyHash())
 	if err != nil {
 		return nil, err
 	}
@@ -47,31 +57,4 @@ func initAdminUser() (*model.User, error) {
 
 	user, err = AddUser(&userAdd)
 	return user, err
-}
-
-func setVerifyData(data string) {
-	verifyData = data
-}
-
-func GetVerifyData() string {
-	if verifyData != "" {
-		return verifyData
-	}
-	user, err := getAdminUser()
-	if err != nil {
-		logrus.Error("查询管理员用户失败")
-		panic(err)
-	}
-	if user.PublicKeyHash == "" {
-		logrus.Error("查询管理员用户公钥HASH为空")
-		panic(err)
-	}
-	setVerifyData(user.PublicKeyHash)
-	return verifyData
-}
-
-func getAdminUser() (*model.User, error) {
-	var user model.User
-	user.Id = adminUserID
-	return GetUser(&user)
 }

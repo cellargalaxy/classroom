@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func AddUser(user *model.User, verifyData, sign string) (*model.User, error) {
+func AddUser(user *model.User, adminPublicKeyHash, sign string) (*model.User, error) {
 	if user == nil {
 		logrus.WithFields(logrus.Fields{"user": user}).Error("添加用户，请求为空")
 		return user, fmt.Errorf("添加用户，请求为空")
@@ -19,24 +19,17 @@ func AddUser(user *model.User, verifyData, sign string) (*model.User, error) {
 		return user, fmt.Errorf("添加用户，公钥为空")
 	}
 	user.PublicKeyHash = util.Sha256String(user.PublicKey)
-	if user.PrivateKey != "" {
-		user.PrivateKeyHash = util.Sha256String(user.PrivateKey)
-	}
-	if user.PrivateKeyHash == "" {
-		logrus.WithFields(logrus.Fields{"user": user}).Error("添加用户，私钥hash为空")
-		return user, fmt.Errorf("添加用户，私钥hash为空")
-	}
 	if sign == "" {
 		logrus.WithFields(logrus.Fields{"user": user}).Error("添加用户，签名为空")
 		return user, fmt.Errorf("添加用户，签名为空")
 	}
 
-	result, err := util.RsaVerifyString(user.PublicKey, verifyData, sign)
+	result, err := util.RsaHashVerifyString(user.PublicKey, adminPublicKeyHash, sign)
 	if err != nil {
 		return user, err
 	}
 	if !result {
-		logrus.WithFields(logrus.Fields{"user": user, "verifyData": verifyData, "sign": sign}).Error("添加用户，签名认证失败")
+		logrus.WithFields(logrus.Fields{"user": user, "adminPublicKeyHash": adminPublicKeyHash, "sign": sign}).Error("添加用户，签名认证失败")
 		return user, fmt.Errorf("添加用户，签名认证失败")
 	}
 	if user.PrivateKey != "" {
