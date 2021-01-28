@@ -6,7 +6,7 @@ import (
 	"github.com/cellargalaxy/classroom/service/db"
 	"github.com/cellargalaxy/classroom/util"
 	"github.com/sirupsen/logrus"
-	"sync"
+	"golang.org/x/sync/errgroup"
 )
 
 func AddMessage(message *model.MessageAdd) (*model.Message, error) {
@@ -20,56 +20,45 @@ func AddMessage(message *model.MessageAdd) (*model.Message, error) {
 	}
 
 	var publishUser, parentUser *model.User
-	var publishUserErr, parentUserErr error
 	var dataHashCount, createSignHashCount, publishSignHashCount int64
-	var dataHashErr, createSignHashErr, publishSignHashErr error
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(5)
-	go func() {
-		defer waitGroup.Done()
+	var errGroup errgroup.Group
+	errGroup.Go(func() error {
+		var err error
 		user := &model.User{}
 		user.PublicKeyHash = message.PublishPublicKeyHash
-		publishUser, publishUserErr = GetUser(user)
-	}()
-	go func() {
-		defer waitGroup.Done()
+		publishUser, err = GetUser(user)
+		return err
+	})
+	errGroup.Go(func() error {
+		var err error
 		user := &model.User{}
 		user.PublicKeyHash = message.ParentHash
-		parentUser, parentUserErr = GetUser(user)
-	}()
-	go func() {
-		defer waitGroup.Done()
+		parentUser, err = GetUser(user)
+		return err
+	})
+	errGroup.Go(func() error {
+		var err error
 		msg := &model.MessageInquiry{}
 		msg.DataHash = message.ParentHash
-		dataHashCount, dataHashErr = ListMessageCount(msg)
-	}()
-	go func() {
-		defer waitGroup.Done()
+		dataHashCount, err = ListMessageCount(msg)
+		return err
+	})
+	errGroup.Go(func() error {
+		var err error
 		msg := &model.MessageInquiry{}
 		msg.CreateSignHash = message.ParentHash
-		createSignHashCount, createSignHashErr = ListMessageCount(msg)
-	}()
-	go func() {
-		defer waitGroup.Done()
+		createSignHashCount, err = ListMessageCount(msg)
+		return err
+	})
+	errGroup.Go(func() error {
+		var err error
 		msg := &model.MessageInquiry{}
 		msg.PublishSignHash = message.ParentHash
-		publishSignHashCount, publishSignHashErr = ListMessageCount(msg)
-	}()
-	waitGroup.Wait()
-	if publishUserErr != nil {
-		return &message.Message, publishUserErr
-	}
-	if parentUserErr != nil {
-		return &message.Message, parentUserErr
-	}
-	if dataHashErr != nil {
-		return &message.Message, dataHashErr
-	}
-	if createSignHashErr != nil {
-		return &message.Message, createSignHashErr
-	}
-	if publishSignHashErr != nil {
-		return &message.Message, publishSignHashErr
+		publishSignHashCount, err = ListMessageCount(msg)
+		return err
+	})
+	if err := errGroup.Wait(); err != nil {
+		return &message.Message, err
 	}
 	if publishUser == nil {
 		logrus.WithFields(logrus.Fields{"message": util.ToJson(message)}).Error("添加信息，发布用户不存在")

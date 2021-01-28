@@ -6,6 +6,7 @@ import (
 	"github.com/cellargalaxy/classroom/util"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestAddMessage(t *testing.T) {
@@ -19,7 +20,7 @@ func TestAddMessage(t *testing.T) {
 
 	messageAdd := &model.MessageAdd{}
 	messageAdd.DataType = "text/plain"
-	messageAdd.Data = randStringRunes(16)
+	messageAdd.Data = randString(16)
 	messageAdd.DataHash = util.Sha256String(messageAdd.Data)
 
 	createSign, err := util.RsaHashSignString(user.PrivateKey, messageAdd.DataHash)
@@ -76,12 +77,19 @@ func TestListMessage(t *testing.T) {
 	}
 }
 
+func TestRandString(t *testing.T) {
+	t.Logf("randString: %+v\n", randString(16))
+	t.Logf("randString: %+v\n", randString(16))
+	t.Logf("randString: %+v\n", randString(16))
+}
+
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func randStringRunes(n int) string {
+func randString(n int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		b[i] = letterRunes[r.Intn(len(letterRunes))]
 	}
 	return string(b)
 }
