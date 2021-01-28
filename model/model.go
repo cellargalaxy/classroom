@@ -1,22 +1,17 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"time"
 )
 
-type Inquiry struct {
-	StartCreatedAt time.Time `json:"start_created_at"`
-	EndCreatedAt   time.Time `json:"end_created_at"`
-	Offset         int       `json:"offset"`
-	Limit          int       `json:"limit"`
-}
-
 type User struct {
-	gorm.Model
-	PublicKey     string `gorm:"public_key" json:"public_key"`
-	PublicKeyHash string `gorm:"public_key_hash" json:"public_key_hash"`
-	PrivateKey    string `gorm:"private_key" json:"private_key"`
+	Id             int32     `gorm:"id" json:"id"`
+	PublicKey      string    `gorm:"public_key" json:"-"`
+	PublicKeyHash  string    `gorm:"public_key_hash" json:"public_key_hash"`
+	PrivateKey     string    `gorm:"private_key" json:"-"`
+	PrivateKeyHash string    `gorm:"private_key_hash" json:"private_key_hash"`
+	CreatedAt      time.Time `gorm:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `gorm:"updated_at" json:"updated_at"`
 }
 
 type UserAdd struct {
@@ -25,20 +20,21 @@ type UserAdd struct {
 }
 
 type Message struct {
-	gorm.Model
-	UserHash   string `gorm:"user_hash" json:"user_hash"`
-	ParentHash string `gorm:"parent_hash" json:"parent_hash"`
-	Data       string `gorm:"data" json:"data"`
-	DataType   string `gorm:"data_type" json:"data_type"`
-	Hash       string `gorm:"hash" json:"hash"`
+	Id                    int32     `gorm:"id" json:"id"`
+	DataType              string    `gorm:"data_type" json:"data_type"`
+	Data                  string    `gorm:"data" json:"-"`
+	DataHash              string    `gorm:"data_hash" json:"data_hash"`
+	CreateSign            string    `gorm:"create_sign" json:"-"`
+	CreatePublicKeyHash   string    `gorm:"create_public_key_hash" json:"create_public_key_hash"`
+	PublishSign           string    `gorm:"publish_sign" json:"-"`
+	PublishPrivateKeyHash string    `gorm:"publish_private_key_hash" json:"publish_private_key_hash"`
+	PublishSignHash       string    `gorm:"publish_sign_hash" json:"publish_sign_hash"`
+	ParentHash            string    `gorm:"parent_hash" json:"parent_hash"`
+	PublishAt             time.Time `gorm:"publish_at" json:"publish_at"`
+	CreatedAt             time.Time `gorm:"created_at" json:"created_at"`
+	UpdatedAt             time.Time `gorm:"updated_at" json:"updated_at"`
 }
 
 type MessageAdd struct {
 	Message
-	Sign string `json:"sign"`
-}
-
-type MessageInquiry struct {
-	Message
-	Inquiry
 }

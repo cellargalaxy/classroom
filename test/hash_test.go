@@ -6,10 +6,6 @@ import (
 )
 
 func TestSha256String(t *testing.T) {
-	hashed, err := util.Sha256String("bjbbbkgbkxcj")
-	if err != nil {
-		t.Errorf("err: %+v\n", err)
-		return
-	}
+	hashed := util.Sha256String("bjbbbkgbkxcj")
 	t.Logf("hashed: %+v\n", hashed)
 }

@@ -9,7 +9,7 @@ import (
 
 func TestAddMessage(t *testing.T) {
 	user := &model.User{}
-	user.ID = 1
+	user.Id = 1
 	user, err := service.GetUser(user)
 	if err != nil {
 		t.Errorf("err: %+v\n", err)
@@ -17,41 +17,44 @@ func TestAddMessage(t *testing.T) {
 	}
 
 	messageAdd := &model.MessageAdd{}
-	messageAdd.UserHash = user.PublicKeyHash
-	messageAdd.Data = util.Base64Encode([]byte("abcde12345"))
 	messageAdd.DataType = "text/plain"
-	hashed, err := util.Sha256String(messageAdd.Data)
+	messageAdd.Data = "abcde12345"
+	messageAdd.DataHash = util.Sha256String(messageAdd.Data)
+	createSign, err := util.RsaHashSignString(user.PrivateKey, messageAdd.DataHash)
 	if err != nil {
 		t.Errorf("err: %+v\n", err)
 		return
 	}
-	messageAdd.Hash = hashed
-	sign, err := util.RsaSignString(user.PrivateKey, messageAdd.Hash)
+	messageAdd.CreateSign = createSign
+	messageAdd.CreatePublicKeyHash = user.PublicKeyHash
+
+	publishSign, err := util.RsaHashSignString(user.PrivateKey, messageAdd.DataHash)
 	if err != nil {
 		t.Errorf("err: %+v\n", err)
 		return
 	}
-	messageAdd.Sign = sign
+	messageAdd.PublishSign = publishSign
+	messageAdd.PublishPrivateKeyHash = user.PrivateKeyHash
 
 	message, err := service.AddMessage(messageAdd)
 	if err != nil {
 		t.Errorf("err: %+v\n", err)
 		return
 	}
-	t.Logf("message: %+v\n", message)
+	t.Logf("message: %+v\n", util.ToJsonIndent(message))
 }
 
 func TestListMessage(t *testing.T) {
 	user := &model.User{}
-	user.ID = 1
+	user.Id = 1
 	user, err := service.GetUser(user)
 	if err != nil {
 		t.Errorf("err: %+v\n", err)
 		return
 	}
 
-	message := &model.MessageInquiry{}
-	message.UserHash = user.PublicKeyHash
+	message := &model.Message{}
+	message.ParentHash = user.PrivateKeyHash
 	t.Logf("message: %+v\n", message)
 	list, err := service.ListMessage(message)
 	if err != nil {
@@ -60,6 +63,6 @@ func TestListMessage(t *testing.T) {
 	}
 	t.Logf("len(list): %+v\n", len(list))
 	for _, m := range list {
-		t.Logf("message: %+v\n", m)
+		t.Logf("message: %+v\n", util.ToJsonIndent(m))
 	}
 }

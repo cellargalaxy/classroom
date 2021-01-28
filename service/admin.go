@@ -32,10 +32,7 @@ func initAdminUser() (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	publicKeyHash, err := util.Sha256String(publicKey)
-	if err != nil {
-		return nil, err
-	}
+	publicKeyHash := util.Sha256String(publicKey)
 	setVerifyData(publicKeyHash)
 	sign, err := util.RsaSignString(privateKey, GetVerifyData())
 	if err != nil {
@@ -43,10 +40,9 @@ func initAdminUser() (*model.User, error) {
 	}
 
 	var userAdd model.UserAdd
-	userAdd.ID = adminUserID
+	userAdd.Id = adminUserID
 	userAdd.PrivateKey = privateKey
 	userAdd.PublicKey = publicKey
-	userAdd.PublicKeyHash = publicKeyHash
 	userAdd.Sign = sign
 
 	user, err = AddUser(&userAdd)
@@ -76,7 +72,6 @@ func GetVerifyData() string {
 
 func getAdminUser() (*model.User, error) {
 	var user model.User
-	user.ID = adminUserID
-	userP, err := GetUser(&user)
-	return userP, err
+	user.Id = adminUserID
+	return GetUser(&user)
 }
