@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
+	"github.com/cellargalaxy/classroom/conf"
 	"github.com/cellargalaxy/classroom/model"
 	"github.com/cellargalaxy/classroom/service/db"
 	"github.com/cellargalaxy/classroom/util"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 )
 
 func AddMessage(message *model.MessageAdd) (*model.Message, error) {
@@ -19,54 +19,24 @@ func AddMessage(message *model.MessageAdd) (*model.Message, error) {
 		return &message.Message, fmt.Errorf("添加信息，发布公钥hash为空")
 	}
 
-	var publishUser, parentUser *model.User
-	var dataHashCount, createSignHashCount, publishSignHashCount int64
-	var errGroup errgroup.Group
-	errGroup.Go(func() error {
-		var err error
-		user := &model.User{}
-		user.PublicKeyHash = message.PublishPublicKeyHash
-		publishUser, err = GetUser(user)
-		return err
-	})
-	errGroup.Go(func() error {
-		var err error
-		user := &model.User{}
-		user.PublicKeyHash = message.ParentHash
-		parentUser, err = GetUser(user)
-		return err
-	})
-	errGroup.Go(func() error {
-		var err error
-		msg := &model.MessageInquiry{}
-		msg.DataHash = message.ParentHash
-		dataHashCount, err = ListMessageCount(msg)
-		return err
-	})
-	errGroup.Go(func() error {
-		var err error
-		msg := &model.MessageInquiry{}
-		msg.CreateSignHash = message.ParentHash
-		createSignHashCount, err = ListMessageCount(msg)
-		return err
-	})
-	errGroup.Go(func() error {
-		var err error
-		msg := &model.MessageInquiry{}
-		msg.PublishSignHash = message.ParentHash
-		publishSignHashCount, err = ListMessageCount(msg)
-		return err
-	})
-	if err := errGroup.Wait(); err != nil {
+	if message.ParentHash == "" {
+		logrus.WithFields(logrus.Fields{"message": util.ToJson(message)}).Error("添加信息，父hash为空")
+		return &message.Message, fmt.Errorf("添加信息，父hash为空")
+	}
+	bytes, err := util.HexDecode(message.ParentHash)
+	if err != nil {
 		return &message.Message, err
 	}
-	if publishUser == nil {
-		logrus.WithFields(logrus.Fields{"message": util.ToJson(message)}).Error("添加信息，发布用户不存在")
-		return &message.Message, fmt.Errorf("添加信息，发布用户不存在")
+	if len(bytes) > conf.GetMaxHashSize() {
+		logrus.WithFields(logrus.Fields{"message": util.ToJson(message)}).Error("添加信息，父hash过大")
+		return &message.Message, fmt.Errorf("添加信息，父hash过大")
 	}
-	if dataHashCount+createSignHashCount+publishSignHashCount == 0 && parentUser == nil {
-		logrus.WithFields(logrus.Fields{"message": util.ToJson(message)}).Error("添加信息，父hash不存在")
-		return &message.Message, fmt.Errorf("添加信息，父hash不存在")
+
+	publishUser := &model.User{}
+	publishUser.PublicKeyHash = message.PublishPublicKeyHash
+	publishUser, err = GetUser(publishUser)
+	if err != nil {
+		return &message.Message, err
 	}
 
 	return db.AddMessage(&message.Message, publishUser.PublicKey)
