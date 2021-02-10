@@ -4,28 +4,6 @@ import (
 	"time"
 )
 
-func (User) TableName() string {
-	return "user"
-}
-
-type User struct {
-	Id            int32     `gorm:"id" json:"id"`
-	PublicKey     string    `gorm:"public_key" json:"-"`
-	PublicKeyHash string    `gorm:"public_key_hash" json:"public_key_hash"`
-	PrivateKey    string    `gorm:"private_key" json:"-"`
-	CreatedAt     time.Time `gorm:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `gorm:"updated_at" json:"updated_at"`
-}
-
-type UserAdd struct {
-	User
-	Sign string `json:"sign"`
-}
-
-func (Message) TableName() string {
-	return "message"
-}
-
 type Message struct {
 	Id                   int32     `gorm:"id" json:"id"`
 	DataType             string    `gorm:"data_type" json:"data_type"`
